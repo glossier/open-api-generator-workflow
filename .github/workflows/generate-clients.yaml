@@ -1,0 +1,38 @@
+name: Generate Clients
+
+on:
+  workflow_call:
+    secrets:
+      GITHUB_TOKEN:
+        required: true
+
+jobs:
+  generate-typescript-axios-client:
+    runs-on: ubuntu-latest
+    name: Generate Typescript-Axios Client
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Run OpenApi Generator
+        uses: openapi-generators/openapitools-generator-action@v1
+        with:
+          generator-tag: latest-release
+          generator: typescript-axios
+          openapi-file: openapi.yaml
+          config-file: open-api-typescript-axios-config.yaml
+
+      - run: npm install
+        working-directory: ./typescript-axios-client
+
+      - name: Authenticate with the GitHub Package Registry
+        working-directory: ./typescript-axios-client
+        run:
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >
+          .npmrc
+
+      - name: Publish generated client package
+        working-directory: ./typescript-axios-client
+        run: npm publish --registry=https://npm.pkg.github.com/ --verbose
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
